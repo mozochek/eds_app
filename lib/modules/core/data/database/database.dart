@@ -6,6 +6,7 @@ import 'package:eds_app/modules/core/data/dao/albums_dao.dart';
 import 'package:eds_app/modules/core/data/dao/posts_dao.dart';
 import 'package:eds_app/modules/core/data/dao/users_dao.dart';
 import 'package:eds_app/modules/core/data/database/tables.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -44,7 +45,7 @@ class AppDatabase extends _$AppDatabase implements IAppDatabase {
             () async {
               final dir = await getApplicationDocumentsDirectory();
               final dbFile = File(p.join(dir.path, 'db.sqlite'));
-              return NativeDatabase(dbFile, logStatements: true);
+              return NativeDatabase(dbFile, logStatements: kDebugMode);
             },
           ),
         );
