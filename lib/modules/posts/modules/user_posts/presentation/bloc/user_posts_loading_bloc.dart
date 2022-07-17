@@ -1,5 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart' as bloc_concurrency;
-import 'package:eds_app/modules/posts/posts_repository.dart';
+import 'package:eds_app/modules/core/domain/entity/post.dart';
+import 'package:eds_app/modules/posts/domain/repository/i_posts_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -44,12 +45,12 @@ class UserPostsLoadingState with _$UserPostsLoadingState {
 
   const factory UserPostsLoadingState.inProgress() = _UserPostsLoadingStateInProgress;
 
-  const factory UserPostsLoadingState.completed(List<String> posts) = _UserPostsLoadingStateCompleted;
+  const factory UserPostsLoadingState.completed(List<Post> posts) = _UserPostsLoadingStateCompleted;
 
   const factory UserPostsLoadingState.failed() = _UserPostsLoadingStateFailed;
 
   bool get isLoading => maybeMap(
-    inProgress: (_) => true,
-    orElse: () => false,
-  );
+        inProgress: (_) => true,
+        orElse: () => false,
+      );
 }

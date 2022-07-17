@@ -1,3 +1,4 @@
+import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -8,12 +9,12 @@ class UserPostsBloc extends Bloc<UserPostsEvent, UserPostsState> {
     on<UserPostsEvent>((event, emit) {
       event.when(
         addData: (posts) {
-          final previousPosts = state.maybeMap<List<String>>(
-            data: (state) => state.posts,
-            orElse: () => <String>[],
+          final previousPosts = state.maybeMap<Set<Post>>(
+            data: (state) => state.posts.toSet(),
+            orElse: () => <Post>{},
           );
 
-          emit(UserPostsState.data([...previousPosts, ...posts]));
+          emit(UserPostsState.data({...previousPosts, ...posts}.toList()));
         },
         setError: () {
           state.whenOrNull(
@@ -31,7 +32,7 @@ class UserPostsBloc extends Bloc<UserPostsEvent, UserPostsState> {
 class UserPostsEvent with _$UserPostsEvent {
   const UserPostsEvent._();
 
-  const factory UserPostsEvent.addData(List<String> posts) = _UserPostsEventAddData;
+  const factory UserPostsEvent.addData(List<Post> posts) = _UserPostsEventAddData;
 
   const factory UserPostsEvent.setError() = _UserPostsEventSetError;
 }
@@ -42,7 +43,7 @@ class UserPostsState with _$UserPostsState {
 
   const factory UserPostsState.notInitialized() = _UserPostsStateNotInitialized;
 
-  const factory UserPostsState.data(List<String> posts) = _UserPostsStateData;
+  const factory UserPostsState.data(List<Post> posts) = _UserPostsStateData;
 
   const factory UserPostsState.error() = _UserPostsStateError;
 }

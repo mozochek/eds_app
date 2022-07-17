@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:eds_app/modules/core/data/dao/albums_dao.dart';
+import 'package:eds_app/modules/core/data/dao/posts_dao.dart';
 import 'package:eds_app/modules/core/data/dao/users_dao.dart';
 import 'package:eds_app/modules/core/data/database/tables.dart';
 import 'package:path/path.dart' as p;
@@ -23,6 +24,7 @@ part 'database.g.dart';
   daos: <Type>[
     UsersDao,
     AlbumsDao,
+    PostsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

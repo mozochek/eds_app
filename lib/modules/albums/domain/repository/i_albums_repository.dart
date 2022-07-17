@@ -6,7 +6,7 @@ abstract class IAlbumsRepository extends IPaginationRepository<Album> {
 
   IAlbumsRepository({
     required this.userId,
-    required super.pageSize,
+    super.pageSize,
   });
 
   Future<AlbumFullData?> getAlbumFullData(int albumId);

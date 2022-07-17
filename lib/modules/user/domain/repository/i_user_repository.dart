@@ -1,8 +1,9 @@
+import 'package:eds_app/modules/core/data/repository/i_pagination_repository.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
 
-abstract class IUserRepository {
-  Future<List<User>?> getUsers();
+abstract class IUserRepository extends IPaginationRepository<User> {
+  // Future<List<User>?> getUsers();
 
   Future<UserFullData?> getUserFullData(int userId);
 }

@@ -2,8 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:eds_app/modules/core/data/dao/users_dao.dart';
 import 'package:eds_app/modules/core/data/database/database.dart';
 import 'package:eds_app/modules/core/data/database/tables.dart';
-import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 
 part 'albums_dao.g.dart';
 
@@ -29,7 +29,7 @@ class AlbumsDao extends DatabaseAccessor<AppDatabase>
   AlbumsDao(super.attachedDatabase);
 
   @override
-  Future<void> saveAllAlbums(List<Album> albums) async => batch((batch) async {
+  Future<void> saveAllAlbums(List<Album> albums) => batch((batch) {
         for (final album in albums) {
           final row = albumToCompanion(album);
 
@@ -37,7 +37,7 @@ class AlbumsDao extends DatabaseAccessor<AppDatabase>
             userAlbumsTable,
             row,
             onConflict: DoUpdate(
-              (old) => row,
+              (_) => row,
               target: [userAlbumsTable.serverId],
             ),
           );
@@ -45,24 +45,37 @@ class AlbumsDao extends DatabaseAccessor<AppDatabase>
       });
 
   @override
-  Future<PaginatedResult<Album>> getAlbumsPage(int userId, int page, int limit) async {
-    final albumDtos = await (select(userAlbumsTable)
-          ..limit(limit)
-          ..where((tbl) => tbl.userId.equals(userId)))
-        .get();
+  Future<PaginatedResult<Album>> getAlbumsPage(int userId, int page, int limit) => transaction(() async {
+        final albumRows = await customSelect(
+          'SELECT * FROM (SELECT ROW_NUMBER() OVER (ORDER BY server_id) as num, * FROM ${userAlbumsTable.actualTableName} WHERE user_id == ?) WHERE num <= ? AND num > ?',
+          variables: <Variable>[
+            Variable(userId),
+            Variable(page * limit),
+            Variable((page - 1) * limit),
+          ],
+        ).get();
 
-    final count = await customSelect(
-      'SELECT COUNT(server_id) as count FROM ${userAlbumsTable.actualTableName} WHERE user_id == ?',
-      variables: [
-        Variable(userId),
-      ],
-    ).getSingle();
+        final count = await customSelect(
+          'SELECT COUNT(server_id) as count FROM ${userAlbumsTable.actualTableName} WHERE user_id == ?',
+          variables: <Variable>[
+            Variable(userId),
+          ],
+        ).getSingle();
 
-    return PaginatedResult(
-      total: count.data['count'] as int,
-      result: albumDtos.map((dto) => dtoToAlbum(dto)).toList(),
-    );
-  }
+        return PaginatedResult(
+          total: count.data['count'] as int,
+          // result: albumDtos.map((dto) => dtoToAlbum(dto)).toList(),
+          result: albumRows.map((row) {
+            final data = row.data;
+
+            return Album(
+              id: data['server_id'] as int,
+              userId: data['user_id'] as int,
+              title: data['title'] as String,
+            );
+          }).toList(),
+        );
+      });
 
   @override
   Future<AlbumFullData?> getAlbumFullData(int albumId) async => transaction(() async {

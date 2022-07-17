@@ -1,47 +1,57 @@
+import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
 import 'package:eds_app/modules/user/data/data_source/user_local_data_source.dart';
 import 'package:eds_app/modules/user/data/data_source/user_remote_data_source.dart';
 import 'package:eds_app/modules/user/domain/repository/i_user_repository.dart';
 
-class UserRepository implements IUserRepository {
-  final IUserLocalDataSource _localDs;
-  final IUserRemoteDataSource _remoteDs;
+class UserRepository extends IUserRepository {
+  final IUserLocalDataSource _userLocalDs;
+  final IUserRemoteDataSource _userRemoteDs;
 
   UserRepository({
-    required IUserLocalDataSource localDs,
-    required IUserRemoteDataSource remoteDs,
-  })  : _localDs = localDs,
-        _remoteDs = remoteDs;
+    required IUserLocalDataSource userLocalDs,
+    required IUserRemoteDataSource userRemoteDs,
+  })  : _userLocalDs = userLocalDs,
+        _userRemoteDs = userRemoteDs;
 
-  @override
-  Future<List<User>?> getUsers() async {
-    final fromCache = await _localDs.getUsers();
-
-    if (fromCache != null) return fromCache;
-
-    final fromRemote = await _remoteDs.getUsers();
-
-    if (fromRemote != null) {
-      await _localDs.saveAllUsers(fromRemote);
-    }
-
-    return fromRemote;
-  }
+  // @override
+  // Future<List<User>?> getUsers() async {
+  //   final fromCache = await _userLocalDs.getUsersPage();
+  //
+  //   if (fromCache != null) return fromCache;
+  //
+  //   final fromRemote = await _userRemoteDs.getUsersPage();
+  //
+  //   if (fromRemote != null) {
+  //     await _userLocalDs.saveAllUsers(fromRemote);
+  //   }
+  //
+  //   return fromRemote;
+  // }
 
   // TODO: вынести дублирующуюся структуру
   @override
   Future<UserFullData?> getUserFullData(int userId) async {
-    final fromCache = await _localDs.getUserFullData(userId);
+    final fromCache = await _userLocalDs.getUserFullData(userId);
 
     if (fromCache != null) return fromCache;
 
-    final fromRemote = await _remoteDs.getUserFullData(userId);
+    final fromRemote = await _userRemoteDs.getUserFullData(userId);
 
     if (fromRemote != null) {
-      await _localDs.saveUserFullData(fromRemote);
+      await _userLocalDs.saveUserFullData(fromRemote);
     }
 
     return fromRemote;
   }
+
+  @override
+  Future<PaginatedResult<User>> getPageFromLocal(int page) => _userLocalDs.getUsersPage(page, pageSize);
+
+  @override
+  Future<PaginatedResult<User>> getPageFromRemote(int page) => _userRemoteDs.getUsersPage(page, pageSize);
+
+  @override
+  Future<void> onPageLoadedFromRemote(PaginatedResult<User> page) => _userLocalDs.saveAllUsers(page.result);
 }

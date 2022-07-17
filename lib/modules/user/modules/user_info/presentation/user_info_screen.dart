@@ -1,8 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eds_app/modules/albums/modules/album_info/presentation/album_info_screen.dart';
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/user_albums_screen.dart';
 import 'package:eds_app/modules/app_scope.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
-import 'package:eds_app/modules/posts/user_posts_screen.dart';
+import 'package:eds_app/modules/dependencies_scope.dart';
+import 'package:eds_app/modules/posts/modules/user_posts/presentation/user_posts_screen.dart';
+import 'package:eds_app/modules/user/data/data_source/user_local_data_source.dart';
+import 'package:eds_app/modules/user/data/data_source/user_remote_data_source.dart';
+import 'package:eds_app/modules/user/data/repository/user_repository.dart';
 import 'package:eds_app/modules/user/domain/entity/user_preview_data.dart';
 import 'package:eds_app/modules/user/modules/user_info/presentation/bloc/user_info_loading_bloc.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +26,14 @@ class UserInfoScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) => UserInfoLoadingBloc(
         previewData: userPreviewData,
-        userRepository: AppScope.of(context).userRepository,
+        userRepository: UserRepository(
+          userLocalDs: UserLocalDataSource(
+            dao: AppScope.of(context).usersDao,
+          ),
+          userRemoteDs: UserRemoteDataSource(
+            dio: DependenciesScope.of(context).dio,
+          ),
+        ),
       )..add(const UserInfoLoadingEvent.load()),
       child: Scaffold(
         appBar: AppBar(
@@ -80,54 +92,63 @@ class _UserDataDisplay extends StatelessWidget {
     return CustomScrollView(
       slivers: <Widget>[
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Имя: ${user.fullName}'),
-                const SizedBox(height: 16.0),
-                Text('Email: ${user.email}'),
-                const SizedBox(height: 16.0),
-                Text('Номер телефона: ${user.phone}'),
-                const SizedBox(height: 16.0),
-                Text('Адрес: ${address.zipCode}, ${address.city}, ${address.street}, ${address.suite}'),
-                const SizedBox(height: 16.0),
-                Text('Сайт: ${user.site}'),
-                const SizedBox(height: 16.0),
-                const Text('Компания:'),
-                const SizedBox(height: 16.0),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: Text('Название: ${company.name}'),
-                ),
-                const SizedBox(height: 16.0),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: Text('Bs: ${company.bs}'),
-                ),
-                const SizedBox(height: 16.0),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Крылатая фраза: ',
-                      children: <InlineSpan>[
-                        TextSpan(
-                          text: company.catchPhrase,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const SizedBox(height: 16.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Имя: ${user.fullName}'),
+                    const SizedBox(height: 16.0),
+                    Text('Email: ${user.email}'),
+                    const SizedBox(height: 16.0),
+                    Text('Номер телефона: ${user.phone}'),
+                    const SizedBox(height: 16.0),
+                    Text('Адрес: ${address.zipCode}, ${address.city}, ${address.street}, ${address.suite}'),
+                    const SizedBox(height: 16.0),
+                    Text('Сайт: ${user.site}'),
+                    const SizedBox(height: 16.0),
+                    const Text('Компания:'),
+                    const SizedBox(height: 16.0),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0),
+                      child: Text('Название: ${company.name}'),
+                    ),
+                    const SizedBox(height: 16.0),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0),
+                      child: Text('Bs: ${company.bs}'),
+                    ),
+                    const SizedBox(height: 16.0),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0),
+                      child: RichText(
+                        text: TextSpan(
+                          text: 'Крылатая фраза: ',
+                          children: <InlineSpan>[
+                            TextSpan(
+                              text: company.catchPhrase,
+                              style: const TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                           style: const TextStyle(
-                            fontStyle: FontStyle.italic,
+                            color: Colors.black,
                           ),
                         ),
-                      ],
-                      style: const TextStyle(
-                        color: Colors.black,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 16.0),
-                Row(
+              ),
+              const SizedBox(height: 16.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
                   children: <Widget>[
                     const Text('Альбомы'),
                     const Expanded(
@@ -149,44 +170,34 @@ class _UserDataDisplay extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8.0),
-                SizedBox(
-                  height: 64.0,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: albumsData.take(3).map((albumData) {
-                      final album = albumData.album;
+              ),
+              const SizedBox(height: 8.0),
+              ...albumsData.take(3).map((data) {
+                final album = data.album;
 
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => AlbumInfoScreen(album: album)),
-                              );
-                            },
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(8.0),
-                            ),
-                            child: Ink(
-                              height: 64.0,
-                              padding: const EdgeInsets.all(4.0),
-                              child: Text(
-                                '${album.id}. ${album.title}',
-                                overflow: TextOverflow.fade,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                return ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AlbumInfoScreen(album: album)),
+                    );
+                  },
+                  leading: SizedBox(
+                    width: 64.0,
+                    height: 64.0,
+                    child: CachedNetworkImage(
+                      imageUrl: data.images.first.thumbnailUrl,
+                      fit: BoxFit.fill,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16.0),
-                Row(
+                  title: Text(album.title),
+                  trailing: Text('${album.id}'),
+                );
+              }),
+              const SizedBox(height: 16.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
                   children: <Widget>[
                     const Text('Посты'),
                     const Expanded(
@@ -196,7 +207,7 @@ class _UserDataDisplay extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const UserPostsScreen()),
+                          MaterialPageRoute(builder: (_) => UserPostsScreen(userId: userData.user.id)),
                         );
                       },
                       child: const Text(
@@ -208,37 +219,22 @@ class _UserDataDisplay extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8.0),
-                SizedBox(
-                  height: 64.0,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: posts.take(3).map((post) {
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                          child: InkWell(
-                            onTap: () {},
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(8.0),
-                            ),
-                            child: Ink(
-                              height: 64.0,
-                              padding: const EdgeInsets.all(4.0),
-                              child: Text(
-                                '${post.id}. ${post.title}',
-                                overflow: TextOverflow.fade,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+              ),
+              const SizedBox(height: 8.0),
+              ...posts.take(3).map((post) {
+                return ListTile(
+                  onTap: () {},
+                  leading: Text('${post.id}'),
+                  title: Text(post.title),
+                  subtitle: Text(
+                    post.body,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
+                );
+              }),
+              const SizedBox(height: 16.0),
+            ],
           ),
         ),
       ],

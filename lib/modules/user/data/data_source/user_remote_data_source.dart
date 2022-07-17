@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_address.dart';
@@ -17,14 +18,25 @@ class UserRemoteDataSource implements IUserRemoteDataSource {
   }) : _dio = dio;
 
   @override
-  Future<List<User>?> getUsers() async {
-    final response = await _dio.get('users');
+  Future<PaginatedResult<User>> getUsersPage(int page, int limit) async {
+    final response = await _dio.get<List>(
+      'users',
+      queryParameters: <String, dynamic>{
+        '_page': page,
+        '_limit': limit,
+      },
+    );
 
     final data = response.data;
 
-    if (data == null || data is! List) return null;
+    if (data == null) return PaginatedResult.empty();
 
-    return data.map((e) => User.fromJson(e as Map<String, dynamic>)).toList();
+    final totalCount = int.parse(response.headers.map['x-total-count']?.first ?? '${data.length}');
+
+    return PaginatedResult<User>(
+      total: totalCount,
+      result: data.map((json) => User.fromJson(json as Map<String, dynamic>)).toList(),
+    );
   }
 
   @override

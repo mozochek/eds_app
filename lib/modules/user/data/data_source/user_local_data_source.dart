@@ -1,4 +1,5 @@
 import 'package:eds_app/modules/core/data/dao/users_dao.dart';
+import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
 import 'package:eds_app/modules/user/data/data_source/i_user_data_source.dart';
@@ -17,11 +18,7 @@ class UserLocalDataSource implements IUserLocalDataSource {
   }) : _dao = dao;
 
   @override
-  Future<List<User>?> getUsers() async {
-    final users = await _dao.getUsers();
-
-    return users.isEmpty ? null : users;
-  }
+  Future<PaginatedResult<User>> getUsersPage(int page, int limit) => _dao.getUsersPage(page, limit);
 
   @override
   Future<void> saveAllUsers(List<User> users) => _dao.saveAll(users);

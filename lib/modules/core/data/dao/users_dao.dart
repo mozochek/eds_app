@@ -3,6 +3,7 @@ import 'package:eds_app/modules/core/data/database/database.dart';
 import 'package:eds_app/modules/core/data/database/tables.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
 import 'package:eds_app/modules/core/domain/entity/lat_long.dart';
+import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_address.dart';
@@ -12,7 +13,7 @@ import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
 part 'users_dao.g.dart';
 
 abstract class IUsersDao {
-  Future<List<User>> getUsers();
+  Future<PaginatedResult<User>> getUsersPage(int page, int limit);
 
   Future<void> saveAll(List<User> users);
 
@@ -37,11 +38,35 @@ class UsersDao extends DatabaseAccessor<AppDatabase>
   UsersDao(super.attachedDatabase);
 
   @override
-  Future<List<User>> getUsers() async => (await usersTable.select().get())
-      .map(
-        (dto) => dtoToUser(dto),
-      )
-      .toList();
+  Future<PaginatedResult<User>> getUsersPage(int page, int limit) => transaction(() async {
+        final usersRow = await customSelect(
+          'SELECT * FROM (SELECT ROW_NUMBER() OVER (ORDER BY server_id) as num, * FROM ${usersTable.actualTableName}) WHERE num <= ? AND num > ?',
+          variables: <Variable>[
+            Variable(page * limit),
+            Variable((page - 1) * limit),
+          ],
+        ).get();
+
+        final count = await customSelect(
+          'SELECT COUNT(server_id) as count FROM ${usersTable.actualTableName}',
+        ).getSingle();
+
+        return PaginatedResult(
+          total: count.data['count'] as int,
+          result: usersRow.map((row) {
+            final data = row.data;
+
+            return User(
+              id: data['server_id'] as int,
+              fullName: data['full_name'] as String,
+              username: data['username'] as String,
+              email: data['email'] as String,
+              phone: data['phone'] as String,
+              site: data['site'] as String,
+            );
+          }).toList(),
+        );
+      });
 
   @override
   Future<void> saveAll(List<User> users) => batch((batch) {
@@ -52,7 +77,7 @@ class UsersDao extends DatabaseAccessor<AppDatabase>
             usersTable,
             row,
             onConflict: DoUpdate(
-              (old) => row,
+              (_) => row,
               target: [usersTable.serverId],
             ),
           );

@@ -1,12 +1,19 @@
+import 'package:eds_app/modules/app_scope.dart';
+import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:eds_app/modules/dependencies_scope.dart';
-import 'package:eds_app/modules/posts/posts_repository.dart';
-import 'package:eds_app/modules/posts/user_posts_bloc.dart';
-import 'package:eds_app/modules/posts/user_posts_loading_bloc.dart';
+import 'package:eds_app/modules/posts/data/data_source/posts_local_data_source.dart';
+import 'package:eds_app/modules/posts/data/data_source/posts_remote_data_source.dart';
+import 'package:eds_app/modules/posts/data/repository/posts_repository.dart';
+import 'package:eds_app/modules/posts/modules/user_posts/presentation/bloc/user_posts_bloc.dart';
+import 'package:eds_app/modules/posts/modules/user_posts/presentation/bloc/user_posts_loading_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class UserPostsScreen extends StatelessWidget {
+  final int userId;
+
   const UserPostsScreen({
+    required this.userId,
     Key? key,
   }) : super(key: key);
 
@@ -17,7 +24,13 @@ class UserPostsScreen extends StatelessWidget {
         BlocProvider(
           create: (context) => UserPostsLoadingBloc(
             postsRepository: PostsRepository(
-              dio: DependenciesScope.of(context).dio,
+              userId: userId,
+              postsRemoteDs: PostsRemoteDataSource(
+                dio: DependenciesScope.of(context).dio,
+              ),
+              postsLocalDs: PostsLocalDataSource(
+                postsDao: AppScope.of(context).postsDao,
+              ),
             ),
           )..add(const UserPostsLoadingEvent.loadNextPage()),
         ),
@@ -61,8 +74,8 @@ class UserPostsScreen extends StatelessWidget {
   }
 }
 
-class _PostsList extends StatelessWidget {
-  final List<String> posts;
+class _PostsList extends StatefulWidget {
+  final List<Post> posts;
 
   const _PostsList({
     required this.posts,
@@ -70,27 +83,67 @@ class _PostsList extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<_PostsList> createState() => _PostsListState();
+}
+
+class _PostsListState extends State<_PostsList> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PostsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.posts != widget.posts) {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+        context.read<UserPostsLoadingBloc>().add(const UserPostsLoadingEvent.loadNextPage());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return NotificationListener(
       onNotification: (n) {
-        // TODO: возможно вместе с ScrollMetricsNotification нужно слушать и другие уведомления, например о соверашющемся скролле
         if (n is ScrollMetricsNotification) {
           if (n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
             context.read<UserPostsLoadingBloc>().add(const UserPostsLoadingEvent.loadNextPage());
           }
         }
+
         return false;
       },
       child: ListView.builder(
-        itemCount: posts.length,
+        controller: _scrollController,
+        itemCount: widget.posts.length,
         itemBuilder: (context, index) {
-          final post = posts[index];
+          final post = widget.posts[index];
 
           Widget child = ListTile(
-            title: Text(post),
+            onTap: () {},
+            leading: Text('${post.id}'),
+            title: Text(post.title),
+            subtitle: Text(
+              post.body,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           );
 
-          final isLast = index == posts.length - 1;
+          final isLast = index == widget.posts.length - 1;
 
           if (isLast == false) return child;
 

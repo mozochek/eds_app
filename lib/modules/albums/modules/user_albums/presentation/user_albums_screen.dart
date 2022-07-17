@@ -5,8 +5,8 @@ import 'package:eds_app/modules/albums/modules/album_info/presentation/album_inf
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/bloc/user_albums_bloc.dart';
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/bloc/user_albums_loading_bloc.dart';
 import 'package:eds_app/modules/app_scope.dart';
-import 'package:eds_app/modules/dependencies_scope.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
+import 'package:eds_app/modules/dependencies_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -25,25 +25,23 @@ class UserAlbumsScreen extends StatelessWidget {
         BlocProvider(
           create: (context) => UserAlbumsLoadingBloc(
             albumsRepository: AlbumsRepository(
+              userId: userId,
               albumsRemoteDs: AlbumsRemoteDataSource(
                 dio: DependenciesScope.of(context).dio,
               ),
               albumsLocalDs: AlbumsLocalDataSource(
                 albumsDao: AppScope.of(context).albumsDao,
               ),
-              userId: userId,
             ),
           )..add(const UserAlbumsLoadingEvent.loadNextPage()),
         ),
         BlocProvider(create: (_) => UserAlbumsBloc()),
       ],
       child: BlocListener<UserAlbumsLoadingBloc, UserAlbumsLoadingState>(
-        listener: (context, state) {
-          state.mapOrNull(
-            completed: (state) => context.read<UserAlbumsBloc>().add(UserAlbumsEvent.addData(state.loadedAlbums)),
-            failed: (_) => context.read<UserAlbumsBloc>().add(const UserAlbumsEvent.setError()),
-          );
-        },
+        listener: (context, state) => state.mapOrNull(
+          completed: (state) => context.read<UserAlbumsBloc>().add(UserAlbumsEvent.addData(state.loadedAlbums)),
+          failed: (_) => context.read<UserAlbumsBloc>().add(const UserAlbumsEvent.setError()),
+        ),
         child: Scaffold(
           appBar: AppBar(
             title: const Text('Список альбомов'),
@@ -75,7 +73,7 @@ class UserAlbumsScreen extends StatelessWidget {
   }
 }
 
-class _AlbumsList extends StatelessWidget {
+class _AlbumsList extends StatefulWidget {
   final List<Album> albums;
 
   const _AlbumsList({
@@ -84,10 +82,41 @@ class _AlbumsList extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<_AlbumsList> createState() => _AlbumsListState();
+}
+
+class _AlbumsListState extends State<_AlbumsList> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AlbumsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.albums != widget.albums) {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+        context.read<UserAlbumsLoadingBloc>().add(const UserAlbumsLoadingEvent.loadNextPage());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return NotificationListener(
       onNotification: (n) {
-        // TODO: возможно вместе с ScrollMetricsNotification нужно слушать и другие уведомления, например о соверашющемся скролле
         if (n is ScrollMetricsNotification) {
           if (n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
             context.read<UserAlbumsLoadingBloc>().add(const UserAlbumsLoadingEvent.loadNextPage());
@@ -96,9 +125,10 @@ class _AlbumsList extends StatelessWidget {
         return false;
       },
       child: ListView.builder(
-        itemCount: albums.length,
+        controller: _scrollController,
+        itemCount: widget.albums.length,
         itemBuilder: (context, index) {
-          final album = albums[index];
+          final album = widget.albums[index];
 
           Widget child = ListTile(
             onTap: () {
@@ -111,7 +141,7 @@ class _AlbumsList extends StatelessWidget {
             title: Text(album.title),
           );
 
-          final isLast = index == albums.length - 1;
+          final isLast = index == widget.albums.length - 1;
 
           if (isLast == false) return child;
 

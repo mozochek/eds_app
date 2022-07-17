@@ -4,8 +4,8 @@ import 'package:eds_app/modules/albums/data/data_source/albums_remote_data_sourc
 import 'package:eds_app/modules/albums/data/repository/albums_repository.dart';
 import 'package:eds_app/modules/albums/modules/album_info/presentation/bloc/album_info_loading_bloc.dart';
 import 'package:eds_app/modules/app_scope.dart';
-import 'package:eds_app/modules/dependencies_scope.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
+import 'package:eds_app/modules/dependencies_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,13 +23,13 @@ class AlbumInfoScreen extends StatelessWidget {
       create: (context) => AlbumInfoLoadingBloc(
         initData: album,
         albumsRepository: AlbumsRepository(
+          userId: album.userId,
           albumsRemoteDs: AlbumsRemoteDataSource(
             dio: DependenciesScope.of(context).dio,
           ),
           albumsLocalDs: AlbumsLocalDataSource(
             albumsDao: AppScope.of(context).albumsDao,
           ),
-          userId: album.userId,
         ),
       )..add(const AlbumInfoLoadingEvent.load()),
       child: Scaffold(
