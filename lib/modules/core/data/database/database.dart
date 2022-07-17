@@ -11,6 +11,16 @@ import 'package:path_provider/path_provider.dart';
 
 part 'database.g.dart';
 
+abstract class IAppDatabase {
+  IUsersDao get usersDao;
+
+  IAlbumsDao get albumsDao;
+
+  IPostsDao get postsDao;
+
+  Future<void> close();
+}
+
 @DriftDatabase(
   tables: <Type>[
     UsersTable,
@@ -27,7 +37,7 @@ part 'database.g.dart';
     PostsDao,
   ],
 )
-class AppDatabase extends _$AppDatabase {
+class AppDatabase extends _$AppDatabase implements IAppDatabase {
   AppDatabase()
       : super(
           LazyDatabase(

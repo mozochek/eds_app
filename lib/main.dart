@@ -3,17 +3,12 @@ import 'dart:developer' as dev;
 
 import 'package:eds_app/modules/app.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+// TODO: вынести некоторые виджеты
 void main() {
   runZonedGuarded(
     () async {
-      WidgetsFlutterBinding.ensureInitialized();
-      await SystemChrome.setPreferredOrientations(
-        <DeviceOrientation>[DeviceOrientation.portraitUp],
-      );
-      runApp(const App());
+      await App.initializeAndRun();
     },
     (error, stack) {
       if (kDebugMode) {

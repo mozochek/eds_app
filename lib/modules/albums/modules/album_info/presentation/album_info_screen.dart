@@ -1,11 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:eds_app/modules/albums/data/data_source/albums_local_data_source.dart';
-import 'package:eds_app/modules/albums/data/data_source/albums_remote_data_source.dart';
-import 'package:eds_app/modules/albums/data/repository/albums_repository.dart';
+import 'package:eds_app/modules/albums/modules/album_info/presentation/album_info_screen_scope.dart';
 import 'package:eds_app/modules/albums/modules/album_info/presentation/bloc/album_info_loading_bloc.dart';
-import 'package:eds_app/modules/app_scope.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
-import 'package:eds_app/modules/dependencies_scope.dart';
+import 'package:eds_app/modules/core/presentation/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -19,22 +16,13 @@ class AlbumInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AlbumInfoLoadingBloc(
-        initData: album,
-        albumsRepository: AlbumsRepository(
-          userId: album.userId,
-          albumsRemoteDs: AlbumsRemoteDataSource(
-            dio: DependenciesScope.of(context).dio,
-          ),
-          albumsLocalDs: AlbumsLocalDataSource(
-            albumsDao: AppScope.of(context).albumsDao,
-          ),
-        ),
-      )..add(const AlbumInfoLoadingEvent.load()),
+    final l10n = AppLocalizations.of(context);
+
+    return AlbumInfoScreenScope(
+      album: album,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Альбом: ${album.title}'),
+          title: Text('${l10n.album}: ${album.title}'),
         ),
         body: SafeArea(
           child: BlocBuilder<AlbumInfoLoadingBloc, AlbumInfoLoadingState>(
@@ -46,8 +34,8 @@ class AlbumInfoScreen extends StatelessWidget {
                   );
                 },
                 failed: (_) {
-                  return const Center(
-                    child: Text('Не удалось загрузить информацию альбома'),
+                  return Center(
+                    child: Text(l10n.albumInfoError),
                   );
                 },
                 completed: (state) {
@@ -72,6 +60,7 @@ class _AlbumDataWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final imageSide = MediaQuery.of(context).size.shortestSide;
 
     return Column(
@@ -91,8 +80,8 @@ class _AlbumDataWidget extends StatelessWidget {
                       imageUrl: imageData.url,
                       fit: BoxFit.fill,
                       errorWidget: (context, _, __) {
-                        return const Center(
-                          child: Text('Не удалось получить изображение'),
+                        return Center(
+                          child: Text(l10n.imageLoadingError),
                         );
                       },
                     ),
@@ -102,12 +91,12 @@ class _AlbumDataWidget extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Column(
                       children: <Widget>[
-                        Text('Изображение №${imageData.id}'),
+                        Text('${l10n.image} №${imageData.id}'),
                         const SizedBox(height: 8.0),
                         RichText(
                           textAlign: TextAlign.center,
                           text: TextSpan(
-                            text: 'Описание: ',
+                            text: '${l10n.description}: ',
                             children: <InlineSpan>[
                               TextSpan(
                                 text: imageData.description,

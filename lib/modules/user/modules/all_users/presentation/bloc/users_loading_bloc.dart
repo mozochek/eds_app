@@ -53,4 +53,9 @@ class UsersLoadingState with _$UsersLoadingState {
   ) = _UsersLoadingStateCompleted;
 
   const factory UsersLoadingState.failed() = _UsersLoadingStateFailed;
+
+  bool get isLoading => maybeMap(
+        inProgress: (_) => true,
+        orElse: () => false,
+      );
 }

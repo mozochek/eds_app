@@ -1,12 +1,9 @@
-import 'package:eds_app/modules/albums/data/data_source/albums_local_data_source.dart';
-import 'package:eds_app/modules/albums/data/data_source/albums_remote_data_source.dart';
-import 'package:eds_app/modules/albums/data/repository/albums_repository.dart';
 import 'package:eds_app/modules/albums/modules/album_info/presentation/album_info_screen.dart';
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/bloc/user_albums_bloc.dart';
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/bloc/user_albums_loading_bloc.dart';
-import 'package:eds_app/modules/app_scope.dart';
+import 'package:eds_app/modules/albums/modules/user_albums/presentation/user_albums_screen_scope.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
-import 'package:eds_app/modules/dependencies_scope.dart';
+import 'package:eds_app/modules/core/presentation/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,52 +17,33 @@ class UserAlbumsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => UserAlbumsLoadingBloc(
-            albumsRepository: AlbumsRepository(
-              userId: userId,
-              albumsRemoteDs: AlbumsRemoteDataSource(
-                dio: DependenciesScope.of(context).dio,
-              ),
-              albumsLocalDs: AlbumsLocalDataSource(
-                albumsDao: AppScope.of(context).albumsDao,
-              ),
-            ),
-          )..add(const UserAlbumsLoadingEvent.loadNextPage()),
+    final l10n = AppLocalizations.of(context);
+
+    return UserAlbumsScreenScope(
+      userId: userId,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.albumsList),
         ),
-        BlocProvider(create: (_) => UserAlbumsBloc()),
-      ],
-      child: BlocListener<UserAlbumsLoadingBloc, UserAlbumsLoadingState>(
-        listener: (context, state) => state.mapOrNull(
-          completed: (state) => context.read<UserAlbumsBloc>().add(UserAlbumsEvent.addData(state.loadedAlbums)),
-          failed: (_) => context.read<UserAlbumsBloc>().add(const UserAlbumsEvent.setError()),
-        ),
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Список альбомов'),
-          ),
-          body: SafeArea(
-            child: BlocBuilder<UserAlbumsBloc, UserAlbumsState>(
-              builder: (context, state) {
-                return state.map<Widget>(
-                  notInitialized: (_) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
-                  error: (_) {
-                    return const Center(
-                      child: Text('Произошла ошибка загрузки альбомов'),
-                    );
-                  },
-                  data: (state) {
-                    return _AlbumsList(albums: state.albums);
-                  },
-                );
-              },
-            ),
+        body: SafeArea(
+          child: BlocBuilder<UserAlbumsBloc, UserAlbumsState>(
+            builder: (context, state) {
+              return state.map<Widget>(
+                notInitialized: (_) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                },
+                error: (_) {
+                  return Center(
+                    child: Text(l10n.albumsListError),
+                  );
+                },
+                data: (state) {
+                  return _AlbumsList(albums: state.albums);
+                },
+              );
+            },
           ),
         ),
       ),

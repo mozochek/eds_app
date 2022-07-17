@@ -15,21 +15,6 @@ class UserRepository extends IUserRepository {
   })  : _userLocalDs = userLocalDs,
         _userRemoteDs = userRemoteDs;
 
-  // @override
-  // Future<List<User>?> getUsers() async {
-  //   final fromCache = await _userLocalDs.getUsersPage();
-  //
-  //   if (fromCache != null) return fromCache;
-  //
-  //   final fromRemote = await _userRemoteDs.getUsersPage();
-  //
-  //   if (fromRemote != null) {
-  //     await _userLocalDs.saveAllUsers(fromRemote);
-  //   }
-  //
-  //   return fromRemote;
-  // }
-
   // TODO: вынести дублирующуюся структуру
   @override
   Future<UserFullData?> getUserFullData(int userId) async {

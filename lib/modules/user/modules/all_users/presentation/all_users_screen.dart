@@ -1,9 +1,6 @@
-import 'package:eds_app/modules/app_scope.dart';
-import 'package:eds_app/modules/dependencies_scope.dart';
-import 'package:eds_app/modules/user/data/data_source/user_local_data_source.dart';
-import 'package:eds_app/modules/user/data/data_source/user_remote_data_source.dart';
-import 'package:eds_app/modules/user/data/repository/user_repository.dart';
+import 'package:eds_app/modules/core/presentation/l10n/app_localizations.dart';
 import 'package:eds_app/modules/user/domain/entity/user_preview_data.dart';
+import 'package:eds_app/modules/user/modules/all_users/presentation/all_users_screen_scope.dart';
 import 'package:eds_app/modules/user/modules/all_users/presentation/bloc/users_bloc.dart';
 import 'package:eds_app/modules/user/modules/all_users/presentation/bloc/users_loading_bloc.dart';
 import 'package:eds_app/modules/user/modules/user_info/presentation/user_info_screen.dart';
@@ -17,51 +14,34 @@ class AllUsersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => UsersLoadingBloc(
-            userRepository: UserRepository(
-              userLocalDs: UserLocalDataSource(
-                dao: AppScope.of(context).usersDao,
-              ),
-              userRemoteDs: UserRemoteDataSource(
-                dio: DependenciesScope.of(context).dio,
-              ),
-            ),
-          )..add(const UsersLoadingEvent.loadNextPage()),
+    final l10n = AppLocalizations.of(context);
+
+    return AllUsersScreenScope(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.listOfUsers),
         ),
-        BlocProvider(create: (_) => UsersBloc()),
-      ],
-      child: BlocListener<UsersLoadingBloc, UsersLoadingState>(
-        listener: (context, state) => state.mapOrNull(
-          completed: (state) => context.read<UsersBloc>().add(UsersEvent.addData(state.loadedUsers)),
-          failed: (_) => context.read<UsersBloc>().add(const UsersEvent.setError()),
-        ),
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Список пользователей'),
-          ),
-          body: SafeArea(
-            child: BlocBuilder<UsersBloc, UsersState>(
-              builder: (context, state) {
-                return state.map<Widget>(
-                  notInitialized: (_) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
-                  error: (_) {
-                    return const Center(
-                      child: Text('Не удалось загрузить список пользователей'),
-                    );
-                  },
-                  data: (state) {
-                    return _UsersList(users: state.users);
-                  },
-                );
-              },
-            ),
+        body: SafeArea(
+          child: BlocBuilder<UsersBloc, UsersState>(
+            builder: (context, state) {
+              return state.map<Widget>(
+                notInitialized: (_) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                },
+                error: (_) {
+                  return Center(
+                    child: Text(l10n.listOfUsersError),
+                  );
+                },
+                data: (state) {
+                  final users = state.users;
+
+                  return _UsersList(users: users);
+                },
+              );
+            },
           ),
         ),
       ),
@@ -126,7 +106,7 @@ class _UsersListState extends State<_UsersList> {
         itemBuilder: (context, index) {
           final user = widget.users[index];
 
-          return ListTile(
+          Widget child = ListTile(
             onTap: () {
               Navigator.push(
                 context,
@@ -136,6 +116,31 @@ class _UsersListState extends State<_UsersList> {
             leading: Text('${user.id}'),
             title: Text(user.fullName),
             subtitle: Text(user.username),
+          );
+
+          final isLast = index == widget.users.length - 1;
+
+          if (isLast == false) return child;
+
+          return Column(
+            children: <Widget>[
+              child,
+              BlocBuilder<UsersLoadingBloc, UsersLoadingState>(
+                buildWhen: (prev, curr) => prev.isLoading != curr.isLoading,
+                builder: (context, state) {
+                  if (state.isLoading) {
+                    return Column(
+                      children: const <Widget>[
+                        SizedBox(height: 8.0),
+                        CircularProgressIndicator(),
+                      ],
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
           );
         },
       ),

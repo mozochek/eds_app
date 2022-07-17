@@ -1,15 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eds_app/modules/albums/modules/album_info/presentation/album_info_screen.dart';
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/user_albums_screen.dart';
-import 'package:eds_app/modules/app_scope.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
-import 'package:eds_app/modules/dependencies_scope.dart';
+import 'package:eds_app/modules/core/presentation/l10n/app_localizations.dart';
 import 'package:eds_app/modules/posts/modules/user_posts/presentation/user_posts_screen.dart';
-import 'package:eds_app/modules/user/data/data_source/user_local_data_source.dart';
-import 'package:eds_app/modules/user/data/data_source/user_remote_data_source.dart';
-import 'package:eds_app/modules/user/data/repository/user_repository.dart';
 import 'package:eds_app/modules/user/domain/entity/user_preview_data.dart';
 import 'package:eds_app/modules/user/modules/user_info/presentation/bloc/user_info_loading_bloc.dart';
+import 'package:eds_app/modules/user/modules/user_info/presentation/user_info_screen_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,18 +20,8 @@ class UserInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => UserInfoLoadingBloc(
-        previewData: userPreviewData,
-        userRepository: UserRepository(
-          userLocalDs: UserLocalDataSource(
-            dao: AppScope.of(context).usersDao,
-          ),
-          userRemoteDs: UserRemoteDataSource(
-            dio: DependenciesScope.of(context).dio,
-          ),
-        ),
-      )..add(const UserInfoLoadingEvent.load()),
+    return UserInfoScreenScope(
+      userPreviewData: userPreviewData,
       child: Scaffold(
         appBar: AppBar(
           title: BlocBuilder<UserInfoLoadingBloc, UserInfoLoadingState>(
@@ -55,8 +42,8 @@ class UserInfoScreen extends StatelessWidget {
                     );
                   },
                   failed: (_) {
-                    return const Center(
-                      child: Text('Не удалось загрузить информацию о пользователе'),
+                    return Center(
+                      child: Text(AppLocalizations.of(context).userInfoError),
                     );
                   },
                   completed: (state) {
@@ -82,13 +69,13 @@ class _UserDataDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final user = userData.user;
     final company = userData.company;
     final address = userData.address;
     final albumsData = userData.albums;
     final posts = userData.posts;
 
-    // TODO: l10n
     return CustomScrollView(
       slivers: <Widget>[
         SliverToBoxAdapter(
@@ -101,33 +88,33 @@ class _UserDataDisplay extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('Имя: ${user.fullName}'),
+                    Text('${l10n.fullName}: ${user.fullName}'),
                     const SizedBox(height: 16.0),
-                    Text('Email: ${user.email}'),
+                    Text('${l10n.email}: ${user.email}'),
                     const SizedBox(height: 16.0),
-                    Text('Номер телефона: ${user.phone}'),
+                    Text('${l10n.phoneNumber}: ${user.phone}'),
                     const SizedBox(height: 16.0),
-                    Text('Адрес: ${address.zipCode}, ${address.city}, ${address.street}, ${address.suite}'),
+                    Text('${l10n.address}: ${address.zipCode}, ${address.city}, ${address.street}, ${address.suite}'),
                     const SizedBox(height: 16.0),
-                    Text('Сайт: ${user.site}'),
+                    Text('${l10n.site}: ${user.site}'),
                     const SizedBox(height: 16.0),
-                    const Text('Компания:'),
+                    Text('${l10n.company}:'),
                     const SizedBox(height: 16.0),
                     Padding(
                       padding: const EdgeInsets.only(left: 16.0),
-                      child: Text('Название: ${company.name}'),
+                      child: Text('${l10n.companyName}: ${company.name}'),
                     ),
                     const SizedBox(height: 16.0),
                     Padding(
                       padding: const EdgeInsets.only(left: 16.0),
-                      child: Text('Bs: ${company.bs}'),
+                      child: Text('${l10n.bs}: ${company.bs}'),
                     ),
                     const SizedBox(height: 16.0),
                     Padding(
                       padding: const EdgeInsets.only(left: 16.0),
                       child: RichText(
                         text: TextSpan(
-                          text: 'Крылатая фраза: ',
+                          text: '${l10n.catchPhrase}: ',
                           children: <InlineSpan>[
                             TextSpan(
                               text: company.catchPhrase,
@@ -150,7 +137,7 @@ class _UserDataDisplay extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   children: <Widget>[
-                    const Text('Альбомы'),
+                    Text(l10n.albums),
                     const Expanded(
                       child: SizedBox(width: 8.0),
                     ),
@@ -161,9 +148,9 @@ class _UserDataDisplay extends StatelessWidget {
                           MaterialPageRoute(builder: (_) => UserAlbumsScreen(userId: userData.user.id)),
                         );
                       },
-                      child: const Text(
-                        'Посмотреть все',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.viewAll,
+                        style: const TextStyle(
                           color: Colors.blue,
                         ),
                       ),
@@ -199,7 +186,7 @@ class _UserDataDisplay extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   children: <Widget>[
-                    const Text('Посты'),
+                    Text(l10n.posts),
                     const Expanded(
                       child: SizedBox(width: 8.0),
                     ),
@@ -210,9 +197,9 @@ class _UserDataDisplay extends StatelessWidget {
                           MaterialPageRoute(builder: (_) => UserPostsScreen(userId: userData.user.id)),
                         );
                       },
-                      child: const Text(
-                        'Посмотреть все',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.viewAll,
+                        style: const TextStyle(
                           color: Colors.blue,
                         ),
                       ),

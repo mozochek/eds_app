@@ -7,7 +7,7 @@ abstract class IPaginationRepository<T> {
   final int pageSize;
 
   IPaginationRepository({
-    this.pageSize = 3,
+    this.pageSize = 30,
   });
 
   int _currentPage = 1;
@@ -18,7 +18,6 @@ abstract class IPaginationRepository<T> {
 
   Future<PaginatedResult<T>> getNextPage() async {
     if (_cacheTotal == null || _cacheTotal! > _returnedFromCache) {
-      print('LOCAL');
       final fromCache = await getPageFromLocal(_currentPage);
 
       _cacheTotal = fromCache.total;
@@ -34,7 +33,6 @@ abstract class IPaginationRepository<T> {
     }
 
     if (_remoteTotal == null || _remoteTotal! > _returnedFromCache + _returnedFromRemote) {
-      print('REMOTE');
       final fromRemote = await getPageFromRemote(_currentPage);
 
       _remoteTotal = fromRemote.total;

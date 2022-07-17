@@ -17,9 +17,14 @@ class UserPostsBloc extends Bloc<UserPostsEvent, UserPostsState> {
           emit(UserPostsState.data({...previousPosts, ...posts}.toList()));
         },
         setError: () {
-          state.whenOrNull(
-            notInitialized: () {
+          state.mapOrNull(
+            notInitialized: (_) {
               emit(const UserPostsState.error());
+            },
+            data: (state) {
+              if (state.posts.isEmpty) {
+                emit(const UserPostsState.error());
+              }
             },
           );
         },

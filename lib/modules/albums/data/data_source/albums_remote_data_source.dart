@@ -3,7 +3,6 @@ import 'package:eds_app/modules/albums/data/data_source/i_albums_data_source.dar
 import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
 import 'package:eds_app/modules/core/domain/entity/album.dart';
 
-// TODO: возможно избавиться от такого прокси наследования
 abstract class IAlbumsRemoteDataSource implements IAlbumsDataSource {}
 
 class AlbumsRemoteDataSource extends IAlbumsRemoteDataSource {

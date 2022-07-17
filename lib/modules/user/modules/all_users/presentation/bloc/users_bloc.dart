@@ -17,10 +17,15 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
           emit(UsersState.data(<UserPreviewData>{...previousUsers, ...users}.toList()));
         },
         setError: () {
-          state.whenOrNull(
-            notInitialized: () {
+          state.mapOrNull(
+            notInitialized: (_) {
               emit(const UsersState.error());
             },
+            data: (state) {
+              if (state.users.isEmpty) {
+                emit(const UsersState.error());
+              }
+            }
           );
         },
       );
