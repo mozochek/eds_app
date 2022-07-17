@@ -3,7 +3,7 @@ import 'package:eds_app/modules/core/data/dao/users_dao.dart';
 import 'package:eds_app/modules/core/data/database/database.dart';
 import 'package:eds_app/modules/core/data/database/tables.dart';
 import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
 
 part 'albums_dao.g.dart';
 

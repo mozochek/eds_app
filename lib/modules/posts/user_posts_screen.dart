@@ -31,6 +31,9 @@ class UserPostsScreen extends StatelessWidget {
           );
         },
         child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Список постов'),
+          ),
           body: SafeArea(
             child: BlocBuilder<UserPostsBloc, UserPostsState>(
               builder: (context, state) {

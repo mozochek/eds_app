@@ -1,12 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:eds_app/modules/core/data/database/database.dart';
 import 'package:eds_app/modules/core/data/database/tables.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
 import 'package:eds_app/modules/core/domain/entity/lat_long.dart';
+import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_address.dart';
 import 'package:eds_app/modules/core/domain/entity/user_company.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
 
 part 'users_dao.g.dart';
 
@@ -27,6 +28,7 @@ abstract class IUsersDao {
     UserCompanyTable,
     UserAlbumsTable,
     AlbumImagesTable,
+    UserPostsTable,
   ],
 )
 class UsersDao extends DatabaseAccessor<AppDatabase>
@@ -82,11 +84,16 @@ class UsersDao extends DatabaseAccessor<AppDatabase>
 
         if (albums == null) return null;
 
+        final posts = await _getUserPostsPreviews(userId);
+
+        if (posts == null) return null;
+
         return UserFullData(
           user: dtoToUser(userDto),
           company: dtoToCompany(companyDto),
           address: dtoToAddress(addressDto),
           albums: albums,
+          posts: posts,
         );
       });
 
@@ -97,7 +104,7 @@ class UsersDao extends DatabaseAccessor<AppDatabase>
     const albumsImagesTableAlias = 'a_i';
 
     final rawFullAlbumsData = await customSelect(
-      'SELECT $albumsTableAlias.server_id as album_id, $albumsTableAlias.user_id as user_id, $albumsTableAlias.title as title, $albumsImagesTableAlias.server_id as image_id, $albumsImagesTableAlias.description as image_description, $albumsImagesTableAlias.url as url, $albumsImagesTableAlias.thumbnail_url as thumbnail_url FROM $albumsTableName as a LEFT JOIN $albumsImagesTableName as $albumsImagesTableAlias ON $albumsTableAlias.server_id == $albumsImagesTableAlias.album_id WHERE a.user_id == $userId GROUP BY album_id LIMIT 3',
+      'SELECT $albumsTableAlias.server_id as album_id, $albumsTableAlias.user_id as user_id, $albumsTableAlias.title as title, $albumsImagesTableAlias.server_id as image_id, $albumsImagesTableAlias.description as image_description, $albumsImagesTableAlias.url as url, $albumsImagesTableAlias.thumbnail_url as thumbnail_url FROM $albumsTableName as a LEFT JOIN $albumsImagesTableName as $albumsImagesTableAlias ON $albumsTableAlias.server_id == $albumsImagesTableAlias.album_id WHERE user_id == $userId GROUP BY album_id ORDER BY album_id ASC LIMIT 3',
     ).get();
 
     if (rawFullAlbumsData.isEmpty) return null;
@@ -126,6 +133,19 @@ class UsersDao extends DatabaseAccessor<AppDatabase>
     }
 
     return result;
+  }
+
+  Future<List<Post>?> _getUserPostsPreviews(int userId) async {
+    final rawPosts = await (select(userPostsTable)
+          ..where((tbl) => tbl.userId.equals(userId))
+          ..orderBy([
+            (tbl) => OrderingTerm(expression: tbl.serverId),
+          ]))
+        .get();
+
+    if (rawPosts.isEmpty) return null;
+
+    return rawPosts.map(dtoToPost).toList();
   }
 
   @override
@@ -157,20 +177,37 @@ class UsersDao extends DatabaseAccessor<AppDatabase>
     });
 
     await batch((batch) async {
-      final albums = data.albums;
-      final albumRows = <UserAlbumsTableCompanion>[];
-      final albumImagesRows = <AlbumImagesTableCompanion>[];
+      for (final albumData in data.albums) {
+        final albumRow = albumToCompanion(albumData.album);
 
-      for (final albumData in albums) {
-        albumRows.add(albumToCompanion(albumData.album));
-
-        albumImagesRows.addAll(
-          albumData.images.map((imgData) => albumImagesToCompanion(albumData.album.id, imgData)),
+        batch.insert(
+          userAlbumsTable,
+          albumRow,
+          onConflict: DoUpdate((_) => albumRow, target: [userAlbumsTable.serverId]),
         );
+
+        for (final imageData in albumData.images) {
+          final imageRow = albumImagesToCompanion(albumData.album.id, imageData);
+
+          batch.insert(
+            albumImagesTable,
+            imageRow,
+            onConflict: DoUpdate((_) => imageRow, target: [albumImagesTable.serverId]),
+          );
+        }
       }
 
-      batch.insertAll(userAlbumsTable, albumRows);
-      batch.insertAll(albumImagesTable, albumImagesRows);
+      final posts = data.posts;
+
+      for (final post in posts) {
+        final postRow = postToCompanion(post);
+
+        batch.insert(
+          userPostsTable,
+          postRow,
+          onConflict: DoUpdate((_) => postRow, target: [userPostsTable.serverId]),
+        );
+      }
     });
   }
 }
@@ -208,13 +245,19 @@ mixin CoreEntitiesAndCompanionsMapperMixin {
         title: album.title,
       );
 
-  AlbumImagesTableCompanion albumImagesToCompanion(int albumId, AlbumImages images) =>
-      AlbumImagesTableCompanion.insert(
+  AlbumImagesTableCompanion albumImagesToCompanion(int albumId, AlbumImages images) => AlbumImagesTableCompanion.insert(
         serverId: images.id,
         albumId: albumId,
         description: images.description,
         url: images.url,
         thumbnailUrl: images.thumbnailUrl,
+      );
+
+  UserPostsTableCompanion postToCompanion(Post post) => UserPostsTableCompanion.insert(
+        serverId: post.id,
+        userId: post.userId,
+        title: post.title,
+        body: post.body,
       );
 
   User dtoToUser(UserDto dto) => User(
@@ -254,5 +297,12 @@ mixin CoreEntitiesAndCompanionsMapperMixin {
         description: dto.description,
         url: dto.url,
         thumbnailUrl: dto.thumbnailUrl,
+      );
+
+  Post dtoToPost(UsersPostsDto dto) => Post(
+        id: dto.serverId,
+        userId: dto.userId,
+        title: dto.title,
+        body: dto.body,
       );
 }

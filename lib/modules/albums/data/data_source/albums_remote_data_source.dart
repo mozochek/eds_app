@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:eds_app/modules/albums/data/data_source/i_albums_data_source.dart';
 import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
 
 // TODO: возможно избавиться от такого прокси наследования
 abstract class IAlbumsRemoteDataSource implements IAlbumsDataSource {}

@@ -74,6 +74,7 @@ class _UserDataDisplay extends StatelessWidget {
     final company = userData.company;
     final address = userData.address;
     final albumsData = userData.albums;
+    final posts = userData.posts;
 
     // TODO: l10n
     return CustomScrollView(
@@ -136,10 +137,15 @@ class _UserDataDisplay extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => UserAlbumsScreen(userId: userData.user.id)),
+                          MaterialPageRoute(builder: (_) => UserAlbumsScreen(userId: userData.user.id)),
                         );
                       },
-                      child: const Text('Посмотреть все'),
+                      child: const Text(
+                        'Посмотреть все',
+                        style: TextStyle(
+                          color: Colors.blue,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -153,18 +159,21 @@ class _UserDataDisplay extends StatelessWidget {
                       final album = albumData.album;
 
                       return Expanded(
-                        child: SizedBox(
-                          height: 64.0,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: InkWell(
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => AlbumInfoScreen(album: album)),
                               );
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
+                            child: Ink(
+                              height: 64.0,
+                              padding: const EdgeInsets.all(4.0),
                               child: Text(
                                 '${album.id}. ${album.title}',
                                 overflow: TextOverflow.fade,
@@ -177,14 +186,56 @@ class _UserDataDisplay extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16.0),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UserPostsScreen()),
-                    );
-                  },
-                  child: const Text('Все посты'),
+                Row(
+                  children: <Widget>[
+                    const Text('Посты'),
+                    const Expanded(
+                      child: SizedBox(width: 8.0),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const UserPostsScreen()),
+                        );
+                      },
+                      child: const Text(
+                        'Посмотреть все',
+                        style: TextStyle(
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8.0),
+                SizedBox(
+                  height: 64.0,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: posts.take(3).map((post) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: InkWell(
+                            onTap: () {},
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
+                            child: Ink(
+                              height: 64.0,
+                              padding: const EdgeInsets.all(4.0),
+                              child: Text(
+                                '${post.id}. ${post.title}',
+                                overflow: TextOverflow.fade,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
             ),

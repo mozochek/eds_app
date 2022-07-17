@@ -6,7 +6,7 @@ import 'package:eds_app/modules/albums/modules/user_albums/presentation/bloc/use
 import 'package:eds_app/modules/albums/modules/user_albums/presentation/bloc/user_albums_loading_bloc.dart';
 import 'package:eds_app/modules/app_scope.dart';
 import 'package:eds_app/modules/dependencies_scope.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -45,6 +45,9 @@ class UserAlbumsScreen extends StatelessWidget {
           );
         },
         child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Список альбомов'),
+          ),
           body: SafeArea(
             child: BlocBuilder<UserAlbumsBloc, UserAlbumsState>(
               builder: (context, state) {

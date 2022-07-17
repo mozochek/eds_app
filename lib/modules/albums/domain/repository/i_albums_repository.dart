@@ -1,5 +1,5 @@
 import 'package:eds_app/modules/core/data/repository/i_pagination_repository.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
 
 abstract class IAlbumsRepository extends IPaginationRepository<Album> {
   final int userId;

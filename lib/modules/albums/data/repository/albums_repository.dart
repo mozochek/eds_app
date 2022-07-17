@@ -4,7 +4,7 @@ import 'package:eds_app/modules/albums/data/data_source/albums_local_data_source
 import 'package:eds_app/modules/albums/data/data_source/albums_remote_data_source.dart';
 import 'package:eds_app/modules/albums/domain/repository/i_albums_repository.dart';
 import 'package:eds_app/modules/core/domain/entity/paginated_result.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
 
 class AlbumsRepository extends IAlbumsRepository {
   final IAlbumsRemoteDataSource _albumsRemoteDs;

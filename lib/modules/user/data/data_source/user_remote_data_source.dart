@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:eds_app/modules/core/domain/entity/album.dart';
+import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:eds_app/modules/core/domain/entity/user.dart';
 import 'package:eds_app/modules/core/domain/entity/user_address.dart';
 import 'package:eds_app/modules/core/domain/entity/user_company.dart';
 import 'package:eds_app/modules/core/domain/entity/user_full_data.dart';
 import 'package:eds_app/modules/user/data/data_source/i_user_data_source.dart';
-import 'package:eds_app/modules/user/domain/entity/album.dart';
 
 abstract class IUserRemoteDataSource implements IUserDataSource {}
 
@@ -38,16 +39,21 @@ class UserRemoteDataSource implements IUserRemoteDataSource {
 
     if (userAlbums == null) return null;
 
+    final userPosts = await _getThreePostsPreviewsForUser(userId);
+
+    if (userPosts == null) return null;
+
     return UserFullData(
       user: user,
       company: UserCompany.fromJson(userData['company'] as Map<String, dynamic>),
       address: UserAddress.fromJson(userData['address'] as Map<String, dynamic>),
       albums: userAlbums,
+      posts: userPosts,
     );
   }
 
   Future<List<AlbumFullData>?> _getThreeAlbumsPreviewsForUser(int userId) async {
-    final albumsData = (await _dio.get(
+    final albumsData = (await _dio.get<List>(
       'users/$userId/albums',
       queryParameters: <String, dynamic>{
         '_page': 1,
@@ -57,14 +63,35 @@ class UserRemoteDataSource implements IUserRemoteDataSource {
     ))
         .data;
 
-    if (albumsData == null || albumsData is! List) return null;
+    if (albumsData == null) return null;
 
     final result = <AlbumFullData>[];
 
     for (final albumJson in albumsData) {
-      final album = Album.fromJson(albumJson);
+      final album = Album.fromJson(albumJson as Map<String, dynamic>);
       final images = (albumJson['photos'] as List).map((imgJson) => AlbumImages.fromJson(imgJson)).toList();
       result.add(AlbumFullData(album: album, images: images));
+    }
+
+    return result;
+  }
+
+  Future<List<Post>?> _getThreePostsPreviewsForUser(int userId) async {
+    final postsData = (await _dio.get<List>(
+      'users/$userId/posts',
+      queryParameters: <String, dynamic>{
+        '_page': 1,
+        '_limit': 3,
+      },
+    ))
+        .data;
+
+    if (postsData == null) return null;
+
+    final result = <Post>[];
+
+    for (final postJson in postsData) {
+      result.add(Post.fromJson(postJson as Map<String, dynamic>));
     }
 
     return result;
