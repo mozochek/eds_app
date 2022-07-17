@@ -7,7 +7,7 @@ abstract class IPaginationRepository<T> {
   final int pageSize;
 
   IPaginationRepository({
-    required this.pageSize,
+    this.pageSize = 30,
   });
 
   int _currentPage = 1;

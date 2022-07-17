@@ -1,14 +1,16 @@
+import 'package:eds_app/modules/core/domain/entity/post.dart';
 import 'package:eds_app/modules/core/presentation/l10n/app_localizations.dart';
-import 'package:eds_app/modules/user/domain/entity/user_preview_data.dart';
-import 'package:eds_app/modules/user/modules/all_users/presentation/all_users_screen_scope.dart';
-import 'package:eds_app/modules/user/modules/all_users/presentation/bloc/users_bloc.dart';
-import 'package:eds_app/modules/user/modules/all_users/presentation/bloc/users_loading_bloc.dart';
-import 'package:eds_app/modules/user/modules/user_info/presentation/user_info_screen.dart';
+import 'package:eds_app/modules/posts/modules/user_posts/presentation/bloc/user_posts_bloc.dart';
+import 'package:eds_app/modules/posts/modules/user_posts/presentation/bloc/user_posts_loading_bloc.dart';
+import 'package:eds_app/modules/posts/modules/user_posts/presentation/user_posts_screen_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class AllUsersScreen extends StatelessWidget {
-  const AllUsersScreen({
+class UserPostsScreen extends StatelessWidget {
+  final int userId;
+
+  const UserPostsScreen({
+    required this.userId,
     Key? key,
   }) : super(key: key);
 
@@ -16,13 +18,14 @@ class AllUsersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return AllUsersScreenScope(
+    return UserPostsScreenScope(
+      userId: userId,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(l10n.listOfUsers),
+          title: Text(l10n.postsList),
         ),
         body: SafeArea(
-          child: BlocBuilder<UsersBloc, UsersState>(
+          child: BlocBuilder<UserPostsBloc, UserPostsState>(
             builder: (context, state) {
               return state.map<Widget>(
                 notInitialized: (_) {
@@ -32,13 +35,11 @@ class AllUsersScreen extends StatelessWidget {
                 },
                 error: (_) {
                   return Center(
-                    child: Text(l10n.listOfUsersError),
+                    child: Text(l10n.postsListError),
                   );
                 },
                 data: (state) {
-                  final users = state.users;
-
-                  return _UsersList(users: users);
+                  return _PostsList(posts: state.posts);
                 },
               );
             },
@@ -49,19 +50,19 @@ class AllUsersScreen extends StatelessWidget {
   }
 }
 
-class _UsersList extends StatefulWidget {
-  final List<UserPreviewData> users;
+class _PostsList extends StatefulWidget {
+  final List<Post> posts;
 
-  const _UsersList({
-    required this.users,
+  const _PostsList({
+    required this.posts,
     Key? key,
   }) : super(key: key);
 
   @override
-  State<_UsersList> createState() => _UsersListState();
+  State<_PostsList> createState() => _PostsListState();
 }
 
-class _UsersListState extends State<_UsersList> {
+class _PostsListState extends State<_PostsList> {
   late final ScrollController _scrollController;
 
   @override
@@ -72,12 +73,12 @@ class _UsersListState extends State<_UsersList> {
   }
 
   @override
-  void didUpdateWidget(covariant _UsersList oldWidget) {
+  void didUpdateWidget(covariant _PostsList oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.users != widget.users) {
+    if (oldWidget.posts != widget.posts) {
       if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
-        context.read<UsersLoadingBloc>().add(const UsersLoadingEvent.loadNextPage());
+        context.read<UserPostsLoadingBloc>().add(const UserPostsLoadingEvent.loadNextPage());
       }
     }
   }
@@ -95,37 +96,37 @@ class _UsersListState extends State<_UsersList> {
       onNotification: (n) {
         if (n is ScrollMetricsNotification) {
           if (n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
-            context.read<UsersLoadingBloc>().add(const UsersLoadingEvent.loadNextPage());
+            context.read<UserPostsLoadingBloc>().add(const UserPostsLoadingEvent.loadNextPage());
           }
         }
+
         return false;
       },
       child: ListView.builder(
         controller: _scrollController,
-        itemCount: widget.users.length,
+        itemCount: widget.posts.length,
         itemBuilder: (context, index) {
-          final user = widget.users[index];
+          final post = widget.posts[index];
 
           Widget child = ListTile(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => UserInfoScreen(userPreviewData: user)),
-              );
-            },
-            leading: Text('${user.id}'),
-            title: Text(user.fullName),
-            subtitle: Text(user.username),
+            onTap: () {},
+            leading: Text('${post.id}'),
+            title: Text(post.title),
+            subtitle: Text(
+              post.body,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           );
 
-          final isLast = index == widget.users.length - 1;
+          final isLast = index == widget.posts.length - 1;
 
           if (isLast == false) return child;
 
           return Column(
             children: <Widget>[
               child,
-              BlocBuilder<UsersLoadingBloc, UsersLoadingState>(
+              BlocBuilder<UserPostsLoadingBloc, UserPostsLoadingState>(
                 buildWhen: (prev, curr) => prev.isLoading != curr.isLoading,
                 builder: (context, state) {
                   if (state.isLoading) {

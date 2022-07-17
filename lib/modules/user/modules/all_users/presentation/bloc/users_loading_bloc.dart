@@ -16,21 +16,15 @@ class UsersLoadingBloc extends Bloc<UsersLoadingEvent, UsersLoadingState> {
     on<UsersLoadingEvent>((event, emit) async {
       try {
         emit(const UsersLoadingState.inProgress());
-
-        final users = await _userRepo.getUsers();
-        if (users != null) {
-          final result = users
-              .map((u) => UserPreviewData(
-                    id: u.id,
-                    username: u.username,
-                    fullName: u.fullName,
-                  ))
-              .toList();
-          emit(UsersLoadingState.completed(result));
-          return;
-        }
-
-        emit(const UsersLoadingState.failed());
+        final users = await _userRepo.getNextPage();
+        final result = users.result
+            .map((u) => UserPreviewData(
+                  id: u.id,
+                  username: u.username,
+                  fullName: u.fullName,
+                ))
+            .toList();
+        emit(UsersLoadingState.completed(result));
       } on Object {
         emit(const UsersLoadingState.failed());
         rethrow;
@@ -43,7 +37,7 @@ class UsersLoadingBloc extends Bloc<UsersLoadingEvent, UsersLoadingState> {
 class UsersLoadingEvent with _$UsersLoadingEvent {
   const UsersLoadingEvent._();
 
-  const factory UsersLoadingEvent.load() = _UsersLoadingEventLoad;
+  const factory UsersLoadingEvent.loadNextPage() = _UsersLoadingEventLoadNextPage;
 }
 
 @freezed
@@ -55,8 +49,13 @@ class UsersLoadingState with _$UsersLoadingState {
   const factory UsersLoadingState.inProgress() = _UsersLoadingStateInProgress;
 
   const factory UsersLoadingState.completed(
-    List<UserPreviewData> users,
+    List<UserPreviewData> loadedUsers,
   ) = _UsersLoadingStateCompleted;
 
   const factory UsersLoadingState.failed() = _UsersLoadingStateFailed;
+
+  bool get isLoading => maybeMap(
+        inProgress: (_) => true,
+        orElse: () => false,
+      );
 }

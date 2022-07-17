@@ -2,15 +2,18 @@ import 'dart:async';
 import 'dart:developer' as dev;
 
 import 'package:eds_app/modules/app.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
+// TODO: вынести некоторые виджеты
 void main() {
   runZonedGuarded(
-    () {
-      runApp(const App());
+    () async {
+      await App.initializeAndRun();
     },
     (error, stack) {
-      dev.log('Unhandled exception in runZonedGuarded', error: error, stackTrace: stack);
+      if (kDebugMode) {
+        dev.log('Unhandled exception in runZonedGuarded', error: error, stackTrace: stack);
+      }
     },
   );
 }

@@ -1,16 +1,20 @@
 import 'package:dio/dio.dart';
+import 'package:eds_app/modules/core/data/database/database.dart';
 import 'package:flutter/material.dart';
 
 @immutable
 class AppStore {
   final Dio dio;
+  final IAppDatabase database;
 
   const AppStore({
     required this.dio,
+    required this.database,
   });
 
   void dispose() {
     dio.close();
+    database.close();
   }
 }
 
@@ -51,6 +55,7 @@ class _DependenciesScopeState extends State<DependenciesScope> {
           sendTimeout: 7000,
           receiveTimeout: 7000,
         ),
+      database: AppDatabase(),
     );
   }
 
@@ -80,6 +85,5 @@ class _DependenciesInhScope extends InheritedWidget {
   });
 
   @override
-  bool updateShouldNotify(covariant InheritedWidget oldWidget) =>
-      oldWidget is _DependenciesInhScope && store != oldWidget.store;
+  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
 }
